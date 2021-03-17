@@ -23,8 +23,8 @@ Executing 'alarm-single':
 (alarm-single) end
 Execution of 'alarm-single' complete.
 Timer: 354 ticks
-Thread: 0 idle ticks, 357 kernel ticks, 0 user ticks
-Console: 982 characters output
+Thread: 250 idle ticks, 107 kernel ticks, 0 user ticks
+Console: 984 characters output
 Keyboard: 0 keys pressed
 Powering off..========================================================================
                         Bochs x86 Emulator 2.6

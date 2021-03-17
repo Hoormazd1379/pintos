@@ -30,7 +30,7 @@ Executing 'priority-fifo':
 (priority-fifo) iteration: 10 11 12 13 14 15 11 12 13 14 15 13 14 15 14 15
 (priority-fifo) end
 Execution of 'priority-fifo' complete.
-Timer: 225 ticks
+Timer: 224 ticks
 Thread: 0 idle ticks, 227 kernel ticks, 0 user ticks
 Console: 1555 characters output
 Keyboard: 0 keys pressed

@@ -104,9 +104,9 @@ timer_sleep (int64_t ticks)
   enum intr_level current_intr_level = intr_disable(); //disable interrupts to protect critical sections
   struct thread* current_thread = thread_current();
 
-  current_thread->cmp_ticks_to_wake = timer_ticks() + ticks; //set and start timer to unblock the thread
+  current_thread->ticks_to_wake = timer_ticks() + ticks; //set and start timer to unblock the thread
 
-  list_insert_ordered (&sleeping_threads, current_thread->elem, cmp_ticks_to_wake, NULL); //keep the list sorted
+  list_insert_ordered (&sleeping_threads, &current_thread->elem, cmp_ticks_to_wake, NULL); //keep the list sorted
 
   thread_block(); //block the thread (sleep)
 
@@ -194,7 +194,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
 
   struct list_elem *front;
-  struct thread *nextthread;
+  struct thread *frontthread;
 
 
   ticks++;
