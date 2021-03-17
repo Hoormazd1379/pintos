@@ -1,0 +1,8 @@
+
+.vagrant/
+
+bootstrap.sh
+
+**/.DS_Store
+
+Vagrantfile
