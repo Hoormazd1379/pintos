@@ -7,6 +7,7 @@
 #include "threads/interrupt.h"
 #include "threads/synch.h"
 #include "threads/thread.h"
+#include "kernel/list.h"
   
 /* See [8254] for hardware details of the 8254 timer chip. */
 
@@ -30,6 +31,9 @@ static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
 static void real_time_delay (int64_t num, int32_t denom);
 
+/* threads currently sleeping */
+struct list sleeping_threads;
+
 /* Sets up the timer to interrupt TIMER_FREQ times per second,
    and registers the corresponding interrupt. */
 void
@@ -37,6 +41,9 @@ timer_init (void)
 {
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
+
+  //init sleeping_threads list
+  list_init (&sleeping_threads);
 }
 
 /* Calibrates loops_per_tick, used to implement brief delays. */
@@ -89,11 +96,26 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
-  int64_t start = timer_ticks ();
 
+  //not sure why we need this but im leaving it.
   ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+
+  //int64_t start = timer_ticks ();
+  enum intr_level current_intr_level = intr_disable(); //disable interrupts to protect critical sections
+  struct thread* current_thread = thread_current();
+
+  current_thread->ticks_to_wake = timer_ticks() + ticks; //set and start timer to unblock the thread
+
+  list_insert_ordered (&sleeping_threads, &current_thread->elem, cmp_ticks_to_wake, NULL); //keep the list sorted
+
+  thread_block(); //block the thread (sleep)
+
+
+  intr_set_level(current_intr_level); //set the interrupt level to whatever it was before.
+
+  
+  //while (timer_elapsed (start) < ticks) 
+  //thread_yield ();
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -170,8 +192,27 @@ timer_print_stats (void)
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
+
+  struct list_elem *front;
+  struct thread *frontthread;
+
+
   ticks++;
   thread_tick ();
+
+
+
+  while(!list_empty(&sleeping_threads))
+  {
+    front = list_front(&sleeping_threads);
+    frontthread = list_entry (front, struct thread, elem);
+
+      if(frontthread->ticks_to_wake > ticks )
+        break;
+
+      list_remove (front);
+      thread_unblock(frontthread);
+  }
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer

@@ -105,8 +105,8 @@ Executing 'mlfqs-load-60':
 (mlfqs-load-60) end
 Execution of 'mlfqs-load-60' complete.
 Timer: 18837 ticks
-Thread: 0 idle ticks, 18839 kernel ticks, 0 user ticks
-Console: 5295 characters output
+Thread: 12197 idle ticks, 6642 kernel ticks, 0 user ticks
+Console: 5298 characters output
 Keyboard: 0 keys pressed
 Powering off..========================================================================
                         Bochs x86 Emulator 2.6
