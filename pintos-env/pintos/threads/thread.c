@@ -585,3 +585,13 @@ allocate_tid (void)
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
+
+//here the idea is to keep the list in a sorted order to make sure a thread that threads in the list dont wait for eachother to unblock.
+bool cmp_ticks_to_wake(struct list_elem *first, struct list_elem *second, void *aux)
+{
+  struct thread *first_thread = list_entry (first, struct thread, elem);
+  struct thread *second_thread = list_entry (second, struct thread, elem);
+
+  return first_thread->ticks_to_wake < second_thread->ticks_to_wake;
+
+} 
