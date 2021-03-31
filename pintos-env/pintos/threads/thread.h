@@ -4,7 +4,6 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
-#include "kernel/list.h"
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -83,10 +82,6 @@ typedef int tid_t;
    blocked state is on a semaphore wait list. */
 struct thread
   {
-
-    //ticks until the thread is unblocked
-    int64_t ticks_to_wake;
-
     /* Owned by thread.c. */
     tid_t tid;                          /* Thread identifier. */
     enum thread_status status;          /* Thread state. */
@@ -98,12 +93,12 @@ struct thread
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
-
-
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
 #endif
+    /* Time when we wanna wake up a thread (Assignment 2) */  
+    int64_t wakeupattick;
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
@@ -144,7 +139,7 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
-
-bool cmp_ticks_to_wake(struct list_elem *first, struct list_elem *second, void *aux);
+/* Assignment 2 */
+void thread_sleep(int64_t);
 
 #endif /* threads/thread.h */

@@ -11,6 +11,7 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "devices/timer.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -23,6 +24,10 @@
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
 static struct list ready_list;
+
+/* List of processes in THREAD_BLOCK state, that is, processes
+   that are sleeping. */
+static struct list sleep_list;
 
 /* List of all processes.  Processes are added to this list
    when they are first scheduled and removed when they exit. */
@@ -71,6 +76,8 @@ static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 
+void check_for_sleeping_threads(void);
+
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
    general and it is possible in this case only because loader.S
@@ -91,6 +98,7 @@ thread_init (void)
 
   lock_init (&tid_lock);
   list_init (&ready_list);
+  list_init(&sleep_list);
   list_init (&all_list);
 
   /* Set up a thread structure for the running thread. */
@@ -137,6 +145,9 @@ thread_tick (void)
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
     intr_yield_on_return ();
+
+  check_for_sleeping_threads();
+
 }
 
 /* Prints thread statistics. */
@@ -581,17 +592,36 @@ allocate_tid (void)
 
   return tid;
 }
+
+// Blocking current thread and putting it in sleep_list until wakeuptick happens
+void thread_sleep(int64_t wakeuptick) {
+  enum intr_level old_lvl = intr_disable();
+  struct thread * curr = thread_current();
+  curr->wakeupattick = wakeuptick;
+  list_push_back(&sleep_list,&curr->elem);
+  thread_block();
+  intr_set_level(old_lvl);
+}
+
+// Checking if we should wake up some thread and do that 
+void check_for_sleeping_threads() {
+  enum intr_level old_lvl = intr_disable();
+  struct list_elem *it = list_begin(&sleep_list);
+  int64_t now = timer_ticks();
+
+  while (it != list_end(&sleep_list)) {
+    struct thread *t = list_entry(it,struct thread, elem);
+    struct list_elem * next = list_next (it);
+    if (now >= t->wakeupattick) {
+      list_remove(it);
+      thread_unblock(t);
+    }
+    it = next;
+  }
+
+  intr_set_level(old_lvl);
+}
 
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
-
-//here the idea is to keep the list in a sorted order to make sure a thread that threads in the list dont wait for eachother to unblock.
-bool cmp_ticks_to_wake(struct list_elem *first, struct list_elem *second, void *aux)
-{
-  struct thread *first_thread = list_entry (first, struct thread, elem);
-  struct thread *second_thread = list_entry (second, struct thread, elem);
-
-  return first_thread->ticks_to_wake < second_thread->ticks_to_wake;
-
-} 
